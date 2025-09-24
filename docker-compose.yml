@@ -1,0 +1,15 @@
+services:
+  vakhtangov-bot:
+    image: lobanovsky/vakhtangov-bot:${TAG}
+    container_name: vakhtangov-bot
+    restart: always
+    environment:
+      TZ: Europe/Moscow
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      DB_NAME: ${DB_NAME}
+      CHROMEDRIVER_PATH: ${CHROMEDRIVER_PATH}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    env_file:
+      - .env
