@@ -38,8 +38,16 @@ fun main() {
         "https://vakhtangov.ru/show/beg/"
     )
     val performances = getAllPerformances()
-        .map { Performance(title = it.title, url = it.url) }
-        .filter { it.url in urls }
+        .map {
+            Performance(
+                id = it.id,
+                title = it.title,
+                url = it.url,
+                scene = it.scene
+            )
+        }.filter { it.url in urls }
+
+    startScheduleNotifier(bot, performances)
 
     // Устанавливаем список команд, чтобы они отображались в Telegram
     bot.setMyCommands(
@@ -53,4 +61,69 @@ fun main() {
     )
 
     bot.startPolling()
+}
+
+fun startScheduleNotifier(bot: Bot, performance: List<Performance>) {
+    val scope = CoroutineScope(Dispatchers.IO)
+    scope.launch {
+        val semaphore = Semaphore(2) // максимум 2 одновременных задачи
+        while (isActive) {
+            val tasks = performance.map { p ->
+                async {
+                    semaphore.withPermit {
+                        try {
+                            bot.checkTickets(p, "7 октября, вторник, 19:00")
+                        } catch (e: Exception) {
+                            println("Ошибка при проверке ${p.title}: ${e.message}")
+                        }
+                    }
+                }
+            }
+            tasks.awaitAll() // ждем завершения всех проверок
+            delay(Random.nextLong(5 * 1000L, 30 * 1000L)) // от 5 до 30 секунд ожидания
+        }
+    }
+}
+
+fun Bot.checkTickets(performance: Performance, desiredDate: String) {
+    logger().info("Проверяем доступные билеты на [${performance.title}], дату: $desiredDate ...")
+
+    val schedule = scrapeSchedule(performance)
+
+    // Фильтруем только на нужную дату
+    val matchingSchedules = schedule.filter {
+        "${it.date}, ${it.dayOfWeek}, ${it.time}" == desiredDate
+    }
+
+    if (matchingSchedules.isEmpty()) {
+        logger().info("[${performance.title}] На дату $desiredDate спектакль не найден.")
+        return
+    }
+
+    // Фильтруем по доступности билетов
+    val availableSchedules = matchingSchedules.filter { it.ticketsAvailable }
+
+    if (availableSchedules.isEmpty()) {
+        val msg = "[${performance.title}] На дату $desiredDate билеты недоступны."
+        logger().info(msg)
+        return
+    }
+
+    // Если есть доступные билеты → формируем сообщение
+    val message = availableSchedules.joinToString("") {
+        "\n • Дата: ${it.date}, День недели: ${it.dayOfWeek}, Время: ${it.time}"
+    }
+
+    val text = "🔔<b>Доступны билеты на [${performance.title}]:</b> $message <a href=\"${performance.url}\">Купить</a>"
+
+    logger().info("[${performance.title}] Найдены доступные билеты на $desiredDate")
+
+    // Отправляем сообщение каждому подписчику
+    getAllSubscribers().forEach { (userId, _) ->
+        sendMessage(
+            chatId = ChatId.fromId(userId),
+            text = text,
+            parseMode = HTML
+        )
+    }
 }

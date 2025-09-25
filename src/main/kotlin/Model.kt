@@ -7,7 +7,7 @@ data class Performance(
 
 data class Schedule(
     val date: String,
+    val dayOfWeek: String,
     val time: String,
-    val scene: String,
     val ticketsAvailable: Boolean
 )

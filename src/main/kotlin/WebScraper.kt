@@ -90,37 +90,45 @@ object WebScraper {
 //            val document: Document = Jsoup.connect(performance.url).get()
 
             // Ищем блоки с расписанием
-            val scheduleItems = document.select(".play-info__meta-item")
+            val showAfisha = document.select("ul.show-afisha > li")
 
-            for (item in scheduleItems) {
-                val spans = item.select("span")
-                if (spans.size < 2) continue // пропускаем, если нет хотя бы даты и сцены
+            for (li in showAfisha) {
+//                val date = li.select("span.date").firstOrNull()?.text()?.trim()?.removeSuffix(",") ?: continue
+                // 1) Попробуем явно выбрать вложенный span.date (внутренний)
+                //    Если его нет — возьмём первый попавшийся span.date (фоллбэк).
+                val dateElem = li.selectFirst("span.date > span.date")
+                    ?: li.selectFirst("p.info span.date")
 
-                val dateTimeText = spans[0].text().trim() // Пример: "15 июн 2025 (Вс) - 19:00"
-                val sceneText = spans[1].text().trim()
+                // raw может быть:
+                //  - "28 сентября,"(правильно)
+                //  - "28 сентября, воскресенье, 19:00" (если попали на внешний span) — возьмём первые данные до запятой
+                val rawDate = dateElem?.text()?.trim().orEmpty()
+                val date = rawDate
+                    .split(",") // берём первый фрагмент до запятой — это "28 сентября"
+                    .firstOrNull()
+                    ?.trim()
+                    ?.removeSuffix(",")
+                    .orEmpty()
 
-                val dateTimeParts = dateTimeText.split(" - ")
-                if (dateTimeParts.size != 2) continue
+                val dayOfWeek = li.select("span.weekday").firstOrNull()?.text()?.trim()?.removeSuffix(",") ?: ""
+                val time = li.select("span.time").firstOrNull()?.text()?.trim() ?: ""
 
-                val date = dateTimeParts[0].trim() // "15 июн 2025 (Вс)"
-                val time = dateTimeParts[1].trim() // "19:00"
+                // Проверяем доступность билетов
+                val ticketButton = li.select("a.js-buy-tickets-btn").firstOrNull()
+                val ticketsAvailable = ticketButton != null && !ticketButton.hasClass("disabled")
 
-                // Проверяем наличие кнопки "Купить билет"
-                val buyButton = item.select("a.btn")
-                    .firstOrNull { it.text().contains("Купить билет", ignoreCase = true) }
-
-                val ticketsAvailable = buyButton != null
-
-                schedules.add(
-                    Schedule(
-                        date = date,
-                        time = time,
-                        scene = sceneText,
-                        ticketsAvailable = ticketsAvailable
+                // Пропускаем служебные строки типа "Билеты: от 800 руб."
+                if (date.isNotBlank() && time.isNotBlank()) {
+                    schedules.add(
+                        Schedule(
+                            date = date,
+                            dayOfWeek = dayOfWeek,
+                            time = time,
+                            ticketsAvailable = ticketsAvailable
+                        )
                     )
-                )
+                }
             }
-
         } catch (e: Exception) {
             logger().warn("Ошибка при парсинге расписания спектакля [${performance.title}]: ${e.message}")
         }
