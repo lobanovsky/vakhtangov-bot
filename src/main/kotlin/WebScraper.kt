@@ -7,24 +7,32 @@ import org.openqa.selenium.chrome.ChromeOptions
 
 object WebScraper {
     private fun parseRepertoire(): List<Performance> {
-        val baseUrl = "https://theatreofnations.ru"
-        val url = "$baseUrl/performances/"
+        val baseUrl = "https://vakhtangov.ru"
+        val url = "$baseUrl/shows/now/"
         val performances = mutableListOf<Performance>()
 
         try {
-            // Получаем и парсим HTML-документ
-            val document: Document = Jsoup.connect(url).get()
+            val doc: Document = Jsoup.connect(url).get()
+            // каждая сцена
+            val sections = doc.select("section.shows-stage")
+            for (section in sections) {
+                val scene = section.selectFirst("header.shows-stage-header h2")?.text() ?: continue
 
-            val links = document.select("a.sidebar-item")
+                val shows = section.select("article.shows-item")
+                for (show in shows) {
+                    val link = show.selectFirst("a") ?: continue
+                    val title = link.selectFirst("h1")?.text() ?: continue
+                    val href = link.attr("href")
 
-            for (link in links) {
-                val title = link.text().trim()
-                val relativeUrl = link.attr("href").trim()
-                val fullUrl = "$baseUrl$relativeUrl"
-
-                performances.add(Performance(title, fullUrl))
+                    performances.add(
+                        Performance(
+                            title = title,
+                            url = href,
+                            scene = scene
+                        )
+                    )
+                }
             }
-
             logger().info("Найдено ${performances.size} спектаклей")
         } catch (e: Exception) {
             logger().error("Ошибка при парсинге страницы: ${e.message}")
@@ -42,8 +50,8 @@ object WebScraper {
 
         if (performances.isNotEmpty()) {
             clearPerformances()
-            for ((title, url) in performances) {
-                addPerformance(title, url)
+            for ((it, title, url, scene) in performances) {
+                addPerformance(title, url, scene)
             }
             logger().info("База данных спектаклей обновлена")
         } else {

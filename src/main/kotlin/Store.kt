@@ -1,39 +1,32 @@
+import Performances
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.ISqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.Table.autoIncrement
-import org.jetbrains.exposed.sql.Table.nullable
-import org.jetbrains.exposed.sql.Table.references
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteAll
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
 // Таблица подписчиков
 object Subscribers : Table() {
-    val userId = Table.long("user_id")
-    val firstName = Table.varchar("first_name", 50)
-    val lastName = Table.varchar("last_name", 50).nullable()
-    val username = Table.varchar("user_name", 50).nullable()
+    val userId = long("user_id")
+    val firstName = varchar("first_name", 50)
+    val lastName = varchar("last_name", 50).nullable()
+    val username = varchar("user_name", 50).nullable()
 }
 
 // Таблица спектаклей
 object Performances : Table() {
-    val id = Table.integer("id").autoIncrement()
-    val title = Table.varchar("title", 255)
-    val url = Table.varchar("url", 255)
+    val id = integer("id").autoIncrement()
+    val title = varchar("title", 255)
+    val url = varchar("url", 255)
+    val scene = varchar("scene", 255).nullable()
 
-    override val primaryKey = Table.PrimaryKey(id)
+    override val primaryKey = PrimaryKey(id)
 }
 
 // Таблица подписок пользователей на спектакли
 object UserPerformanceSubscriptions : Table() {
-    val userId = Table.long("user_id").references(Subscribers.userId)
-    val performanceId = Table.integer("performance_id").references(Performances.id)
+    val userId = long("user_id").references(Subscribers.userId)
+    val performanceId = integer("performance_id").references(Performances.id)
 
-    override val primaryKey = Table.PrimaryKey(userId, performanceId)
+    override val primaryKey = PrimaryKey(userId, performanceId)
 }
 
 // Инициализация базы данных
@@ -95,21 +88,27 @@ fun getAllSubscribers(): List<Pair<Long, String>> {
 // Функции для работы со спектаклями
 
 // Добавить спектакль
-fun addPerformance(title: String, url: String): Int {
+fun addPerformance(title: String, url: String, scene: String?): Int {
     return transaction {
         val id = Performances.insert {
             it[Performances.title] = title
             it[Performances.url] = url
+            it[Performances.scene] = scene
         } get Performances.id
         id
     }
 }
 
 // Получить все спектакли
-fun getAllPerformances(): List<Triple<Int, String, String>> {
+fun getAllPerformances(): List<Performance> {
     return transaction {
         Performances.selectAll().map {
-            Triple(it[Performances.id], it[Performances.title], it[Performances.url])
+            Performance(
+                id = it[Performances.id],
+                title = it[Performances.title],
+                url = it[Performances.url],
+                scene = it[Performances.scene]
+            )
         }
     }
 }
@@ -131,8 +130,7 @@ fun subscribeUserToPerformance(userId: Long, performanceId: Int) {
         var exists = false
         query.forEach {
             if (it[UserPerformanceSubscriptions.userId] == userId &&
-                it[UserPerformanceSubscriptions.performanceId] == performanceId
-            ) {
+                it[UserPerformanceSubscriptions.performanceId] == performanceId) {
                 exists = true
                 return@forEach
             }
@@ -163,8 +161,7 @@ fun isUserSubscribedToPerformance(userId: Long, performanceId: Int): Boolean {
         val query = UserPerformanceSubscriptions.selectAll()
         query.forEach {
             if (it[UserPerformanceSubscriptions.userId] == userId &&
-                it[UserPerformanceSubscriptions.performanceId] == performanceId
-            ) {
+                it[UserPerformanceSubscriptions.performanceId] == performanceId) {
                 return@transaction true
             }
         }
@@ -192,13 +189,11 @@ fun getUserSubscribedPerformances(userId: Long): List<Triple<Int, String, String
             performances.forEach {
                 val perfId = it[Performances.id]
                 if (perfId in performanceIds) {
-                    result.add(
-                        Triple(
-                            perfId,
-                            it[Performances.title],
-                            it[Performances.url]
-                        )
-                    )
+                    result.add(Triple(
+                        perfId,
+                        it[Performances.title],
+                        it[Performances.url]
+                    ))
                 }
             }
         }

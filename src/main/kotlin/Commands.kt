@@ -11,12 +11,19 @@ fun Dispatcher.perfCommands(
         if (performances.isEmpty()) {
             bot.sendMessage(ChatId.fromId(message.chat.id), "ℹ На данный момент нет доступных спектаклей.")
         } else {
-            val listText = performances.joinToString("\n") { "🎭 ${it.second} - <a href=\"${it.third}\">Подробнее</a>" }
-            bot.sendMessage(
-                ChatId.fromId(message.chat.id),
-                "📜 Список доступных спектаклей:\n$listText",
-                parseMode = HTML
-            )
+            val messages = performances.groupBy { it.scene }.map { (scene, perfs) ->
+                val header = scene?.let { if (it.isBlank()) "🎭 Спектакли:" else "🎭 Спектакли на сцене \"$scene\":" }
+                val listText = perfs.joinToString("\n") { " - <a href=\"${it.url}\">${it.title}</a>" }
+                "$header\n$listText"
+            }
+            //выводим сообщения по частям, чтобы не превышать лимит Telegram
+            messages.forEach { part ->
+                bot.sendMessage(
+                    ChatId.fromId(message.chat.id),
+                    part,
+                    parseMode = HTML
+                )
+            }
         }
     }
 }
