@@ -35,7 +35,7 @@ fun main() {
     }
 
     val urls = setOf(
-        "https://vakhtangov.ru/show/beg/"
+//        "https://vakhtangov.ru/show/beg/"
     )
     val performances = getAllPerformances()
         .map {
