@@ -34,9 +34,11 @@ fun main() {
         }
     }
 
-    val urls = setOf(
+//    val urls = setOf(
 //        "https://vakhtangov.ru/show/beg/"
-    )
+//    )
+    val urls = emptySet<String>()
+
     val performances = getAllPerformances()
         .map {
             Performance(
