@@ -34,10 +34,9 @@ fun main() {
         }
     }
 
-//    val urls = setOf(
-//        "https://vakhtangov.ru/show/beg/"
-//    )
-    val urls = emptySet<String>()
+    val urls = setOf(
+        "https://vakhtangov.ru/show/utinaya-ohota/"
+    )
 
     val performances = getAllPerformances()
         .map {
@@ -74,7 +73,7 @@ fun startScheduleNotifier(bot: Bot, performance: List<Performance>) {
                 async {
                     semaphore.withPermit {
                         try {
-                            bot.checkTickets(p, "7 октября, вторник, 19:00")
+                            bot.checkTickets(p, "7 декабря, воскресенье, 19:30")
                         } catch (e: Exception) {
                             println("Ошибка при проверке ${p.title}: ${e.message}")
                         }
