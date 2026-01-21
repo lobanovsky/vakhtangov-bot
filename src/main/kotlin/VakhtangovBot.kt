@@ -35,7 +35,7 @@ fun main() {
     }
 
     val urls = setOf(
-        "https://vakhtangov.ru/show/utinaya-ohota/"
+        "https://vakhtangov.ru/show/piter_pen/"
     )
 
     val performances = getAllPerformances()
