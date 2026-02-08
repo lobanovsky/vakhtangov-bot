@@ -50,8 +50,8 @@ object WebScraper {
 
         if (performances.isNotEmpty()) {
             clearPerformances()
-            for ((it, title, url, scene) in performances) {
-                addPerformance(title, url, scene)
+            for (perf in performances) {
+                upsertPerformance(perf.title, perf.url, perf.scene)
             }
             logger().info("База данных спектаклей обновлена")
         } else {

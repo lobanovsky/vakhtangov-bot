@@ -1,5 +1,3 @@
-import com.github.kotlintelegrambot.entities.Message
-
 // Enum класс для типов сообщений
 enum class MessageType(val description: String) {
     TEXT("Текстовое сообщение"),
@@ -16,7 +14,7 @@ enum class MessageType(val description: String) {
 
     companion object {
         // Функция для определения типа сообщения на основе содержимого
-        fun fromMessage(message: Message): MessageType {
+        fun fromMessage(message: com.github.kotlintelegrambot.entities.Message): MessageType {
             return when {
                 message.text != null -> TEXT
                 message.photo != null -> PHOTO

@@ -1,5 +1,5 @@
 data class Performance(
-    val id: Int? = null,
+    val id: Int = 0,
     val title: String,
     val url: String,
     val scene: String? = null,
