@@ -1,4 +1,4 @@
-name: Deploy to Proxy Server
+name: to-avocado
 
 on:
   push:
