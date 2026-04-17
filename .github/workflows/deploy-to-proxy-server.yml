@@ -57,7 +57,10 @@ jobs:
         run: |
           echo "TAG=${{ env.SHORT_SHA }}" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "BACKEND_URL=${{ secrets.BACKEND_URL }}" >> .env
+          echo "VAKHTANGOV_API_KEY=${{ secrets.VAKHTANGOV_API_KEY }}" >> .env
+          echo "WEBHOOK_PORT=${{ secrets.WEBHOOK_PORT }}" >> .env
+          echo "WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}" >> .env
 
       - name: copy files to host
         uses: appleboy/scp-action@v0.1.7
