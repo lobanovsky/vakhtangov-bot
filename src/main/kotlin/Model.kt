@@ -1,13 +1,75 @@
-data class Performance(
-    val id: Int = 0,
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class PerformanceDto(
+    val id: String,
     val title: String,
     val url: String,
     val scene: String? = null,
+    val isSubscribed: Boolean = false
 )
 
-data class Schedule(
-    val date: String,
-    val dayOfWeek: String,
-    val time: String,
-    val ticketsAvailable: Boolean
+@Serializable
+data class PerformanceRef(
+    val id: String,
+    val title: String,
+    val url: String,
+    val scene: String? = null
+)
+
+@Serializable
+data class TheatreRef(
+    val id: String,
+    val slug: String,
+    val name: String,
+    val websiteUrl: String
+)
+
+@Serializable
+data class SubscriptionDto(
+    val id: String,
+    val performance: PerformanceRef,
+    val theatre: TheatreRef,
+    val subscribedAt: String,
+    val notificationCount: Int
+)
+
+@Serializable
+data class SubscriberInfoDto(
+    val telegramId: Long,
+    val firstName: String,
+    val username: String? = null,
+    val subscribedAt: String,
+    val notificationCount: Int
+)
+
+@Serializable
+data class SubscriptionDetailDto(
+    val performance: PerformanceRef,
+    val subscribers: List<SubscriberInfoDto>
+)
+
+@Serializable
+data class PendingNotificationDto(
+    val id: String,
+    val telegramId: Long,
+    val performanceTitle: String,
+    val performanceUrl: String,
+    val theatreSlug: String,
+    val scheduleSummary: String,
+    val createdAt: String
+)
+
+@Serializable
+data class SyncUserRequest(
+    val telegramId: Long,
+    val firstName: String,
+    val lastName: String? = null,
+    val username: String? = null
+)
+
+@Serializable
+data class SubscriptionRequest(
+    val telegramId: Long,
+    val performanceId: String
 )

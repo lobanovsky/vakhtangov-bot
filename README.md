@@ -1,14 +1,30 @@
 # Vakhtangov Bot
 
-Telegram-бот для отслеживания билетов на спектакли [Театра им. Вахтангова](https://vakhtangov.ru). Бот периодически проверяет наличие билетов на выбранные постановки и отправляет уведомления подписанным пользователям.
+Telegram-бот для отслеживания билетов на спектакли [Театра им. Вахтангова](https://vakhtangov.ru). Бот работает как тонкий клиент: весь функционал поиска билетов и хранения подписок реализован в [tickets-backend](https://github.com/lobanovsky/tickets-backend). Бот принимает push-уведомления от бэкенда и отправляет сообщения подписчикам в Telegram.
+
+## Архитектура
+
+```
+Telegram User
+    │  команды: /perfs, /status, /mysubs, /subs
+    ▼
+VakhtangovBot  ──── REST API ────►  tickets-backend
+    │                              (подписки, спектакли,
+    │                               поиск билетов)
+    │◄── POST /webhook/notifications ──┘
+    │    (когда найдены билеты)
+    ▼
+Telegram User  ←── уведомление о билетах
+```
+
+Бот не содержит базы данных и не парсит сайт театра — всё это делает бэкенд.
 
 ## Возможности
 
 - Просмотр списка спектаклей с возможностью подписки/отписки
-- Автоматическая проверка наличия билетов в фоновом режиме
 - Push-уведомления при появлении билетов с прямой ссылкой на покупку
 - Просмотр своих подписок со ссылками на страницы спектаклей
-- Административные команды: список всех подписчиков и статистика
+- Административная команда: список всех подписчиков по спектаклям
 
 ## Команды бота
 
@@ -18,16 +34,13 @@ Telegram-бот для отслеживания билетов на спекта
 | `/status` | Мои активные подписки |
 | `/mysubs` | Мои подписки со ссылками на страницы спектаклей |
 | `/subs` | *(admin)* Все подписчики по спектаклям |
-| `/stats` | *(admin)* Статистика пользователей |
 
 ## Стек
 
 - **Kotlin** + **Coroutines**
 - **kotlin-telegram-bot** — Telegram Bot API
-- **Selenium** — рендеринг JS-страниц расписания
-- **JSoup** — парсинг репертуара
-- **Exposed ORM** + **SQLite** — хранение данных
-- **Docker** — контейнеризация и деплой
+- **Ktor** — HTTP-клиент для вызовов бэкенда + HTTP-сервер для webhook-эндпоинта
+- **kotlinx.serialization** — JSON
 
 ## Быстрый старт
 
@@ -37,8 +50,10 @@ Telegram-бот для отслеживания билетов на спекта
 
 ```env
 TELEGRAM_BOT_TOKEN=your_bot_token
-DB_NAME=./data/vakhtangov-bot.db
-CHROMEDRIVER_PATH=/usr/bin/chromedriver
+BACKEND_URL=http://localhost:8080
+VAKHTANGOV_API_KEY=vakhtangov-secret
+WEBHOOK_SECRET=your-webhook-secret
+WEBHOOK_PORT=8081
 DEV_MODE=0
 TZ=Europe/Moscow
 ```
@@ -46,9 +61,11 @@ TZ=Europe/Moscow
 | Переменная | Описание |
 |------------|----------|
 | `TELEGRAM_BOT_TOKEN` | Токен бота от [@BotFather](https://t.me/BotFather) |
-| `DB_NAME` | Путь к файлу SQLite базы данных |
-| `CHROMEDRIVER_PATH` | Путь к бинарнику ChromeDriver |
-| `DEV_MODE` | `0` — боевой режим, `1` — запуск одного прогона без планировщика |
+| `BACKEND_URL` | URL tickets-backend (напр. `http://localhost:8080`) |
+| `VAKHTANGOV_API_KEY` | API-ключ для tickets-backend |
+| `WEBHOOK_SECRET` | Секрет для проверки входящих webhook-запросов |
+| `WEBHOOK_PORT` | Порт HTTP-сервера для webhook (default `8081`) |
+| `DEV_MODE` | `0` — боевой режим, `1` — без webhook-сервера |
 | `TZ` | Часовой пояс (рекомендуется `Europe/Moscow`) |
 
 ### Запуск через Docker Compose
@@ -63,25 +80,49 @@ TAG=latest docker-compose up -d
 # Собрать fat JAR
 ./gradlew shadowJar
 
-# Запустить локально (переменные окружения должны быть заданы)
+# Запустить локально
 ./gradlew run
 ```
 
-## Архитектура
+## Webhook от бэкенда
+
+Бот поднимает HTTP-сервер и слушает `POST /webhook/notifications`. Бэкенд должен отправлять запрос с заголовком `X-Webhook-Secret` при обнаружении доступных билетов.
+
+**Формат запроса:**
+```json
+{
+  "id": "uuid",
+  "telegramId": 123456789,
+  "performanceTitle": "Название спектакля",
+  "performanceUrl": "https://vakhtangov.ru/shows/...",
+  "theatreSlug": "vakhtangov",
+  "scheduleSummary": "• Дата: 01.05.2026, Время: 19:00",
+  "createdAt": "2026-04-17T10:30:00"
+}
+```
+
+Бот отправляет сообщение пользователю, затем вызывает `POST /api/notifications/{id}/ack` у бэкенда.
+
+**Тестирование webhook локально:**
+```bash
+curl -X POST http://localhost:8081/webhook/notifications \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Secret: your-webhook-secret" \
+  -d '{"id":"test-id","telegramId":YOUR_TELEGRAM_ID,"performanceTitle":"Гамлет","performanceUrl":"https://vakhtangov.ru/shows/hamlet","theatreSlug":"vakhtangov","scheduleSummary":"• Дата: 01.05.2026, Время: 19:00","createdAt":"2026-04-17T10:00:00"}'
+```
+
+> **Примечание:** Поддержка отправки webhooks на стороне бэкенда (хранение `webhook_url` для каждого театра и HTTP POST при создании уведомления) — отдельная задача.
+
+## Структура
 
 ```
-VakhtangovBot.kt      — Точка входа, запуск бота, фоновый планировщик проверки билетов
-Commands.kt           — Обработчики команд и callback-кнопок
-Store.kt              — Слой БД через Exposed ORM
-WebScraper.kt         — JSoup для парсинга репертуара; Selenium для JS-страниц расписания
-Model.kt              — Модели данных (Performance, ScheduleItem и др.)
-DatabaseMigrations.kt — Миграции схемы БД при старте
-MessageType.kt        — Enum типов уведомлений
+VakhtangovBot.kt  — Точка входа, запуск бота и webhook-сервера
+Commands.kt       — Обработчики команд и callback-кнопок (вызывают ApiClient)
+ApiClient.kt      — HTTP-клиент для всех вызовов tickets-backend
+WebhookServer.kt  — Ktor HTTP-сервер для приёма push-уведомлений
+Model.kt          — DTO для ответов бэкенда
+Extensions.kt     — Утилиты логирования
 ```
-
-**Поток данных:** при запуске бот парсит репертуар с сайта и сохраняет в БД. Фоновый корутин обходит спектакли с активными подписками, запускает Selenium для проверки наличия билетов и отправляет HTML-уведомления подписчикам.
-
-**Параллелизм:** `Semaphore(2)` ограничивает число одновременных проверок. Между проверками случайная задержка 5–30 секунд для снижения нагрузки на сайт.
 
 ## Деплой
 
@@ -91,4 +132,4 @@ GitHub Actions (`.github/workflows/deploy-to-proxy-server.yml`) при пуше 
 2. Пушит образ в DockerHub (`lobanovsky/vakhtangov-bot`)
 3. По SSH деплоит на Ubuntu-сервер
 
-Монтируемые тома: `/app/data` (SQLite БД) и `/app/logs` (ротируемые логи, макс. 5 МБ).
+Порт `WEBHOOK_PORT` должен быть открыт для входящих запросов от бэкенда.

@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.1.20"
+    kotlin("plugin.serialization") version "2.1.20"
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
@@ -13,23 +14,24 @@ repositories {
     maven("https://jitpack.io")
 }
 
+val ktorVersion = "3.1.0"
+
 dependencies {
     implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.3.0")
 
-    //SQLLite + exposed
-    implementation("org.jetbrains.exposed:exposed-core:0.61.0")
-    implementation("org.jetbrains.exposed:exposed-core:0.61.0")
-    implementation("org.jetbrains.exposed:exposed-dao:0.61.0")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.61.0")
-    implementation("org.xerial:sqlite-jdbc:3.50.3.0")
-    //java-time support for Exposed
-    implementation("org.jetbrains.exposed:exposed-java-time:0.44.1")
+    // Ktor server (webhook endpoint)
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
 
-    // JSoup for web scraping
-    implementation("org.jsoup:jsoup:1.21.2")
+    // Ktor client (backend API)
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
 
-    implementation("net.sourceforge.htmlunit:htmlunit:2.70.0")
-    implementation("org.seleniumhq.selenium:selenium-java:4.31.0")
+    // JSON serialization
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.18")
     implementation("ch.qos.logback:logback-core:1.5.18")
