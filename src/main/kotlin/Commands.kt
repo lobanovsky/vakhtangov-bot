@@ -6,8 +6,27 @@ import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.ParseMode.HTML
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import kotlinx.coroutines.runBlocking
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+
+private const val PAGE_SIZE = 70
+
+private fun buildPerformancePage(performances: List<PerformanceDto>, page: Int): InlineKeyboardMarkup {
+    val totalPages = (performances.size + PAGE_SIZE - 1) / PAGE_SIZE
+    val start = (page - 1) * PAGE_SIZE
+    val pagePerfs = performances.subList(start, minOf(start + PAGE_SIZE, performances.size))
+
+    val buttons: MutableList<List<InlineKeyboardButton>> = pagePerfs.map { perf ->
+        val label = if (perf.isSubscribed) "✅ ${perf.title}" else perf.title
+        val callbackData = if (perf.isSubscribed) "-perf::${perf.id}::$page" else "+perf::${perf.id}::$page"
+        listOf(InlineKeyboardButton.CallbackData(text = label, callbackData = callbackData))
+    }.toMutableList()
+
+    val navRow = mutableListOf<InlineKeyboardButton>()
+    if (page > 1) navRow += InlineKeyboardButton.CallbackData("← Назад", "perfpage::${page - 1}")
+    if (page < totalPages) navRow += InlineKeyboardButton.CallbackData("Вперёд →", "perfpage::${page + 1}")
+    if (navRow.isNotEmpty()) buttons += listOf(navRow)
+
+    return InlineKeyboardMarkup.create(buttons)
+}
 
 fun Dispatcher.perfCommands() {
     command("perfs") {
@@ -27,16 +46,10 @@ fun Dispatcher.perfCommands() {
             return@command
         }
 
-        val buttons = performances.map { perf ->
-            val label = if (perf.isSubscribed) "✅ ${perf.title}" else perf.title
-            val callbackData = if (perf.isSubscribed) "-perf::${perf.id}" else "+perf::${perf.id}"
-            listOf(InlineKeyboardButton.CallbackData(text = label, callbackData = callbackData))
-        }
-
         bot.sendMessage(
             chatId = chatId,
             text = "📜 Выберите спектакли для подписки на уведомления:",
-            replyMarkup = InlineKeyboardMarkup.create(buttons)
+            replyMarkup = buildPerformancePage(performances, 1)
         )
     }
 }
@@ -49,7 +62,9 @@ fun Dispatcher.callbackCommands() {
         val messageId = callbackQuery.message?.messageId ?: return@callbackQuery
 
         val subscribe = data.startsWith("+perf::")
-        val perfId = data.removePrefix("+perf::").removePrefix("-perf::")
+        val parts = data.removePrefix("+").removePrefix("-").split("::")
+        val perfId = parts[1]
+        val page = parts.getOrNull(2)?.toIntOrNull() ?: 1
 
         runBlocking {
             if (subscribe) {
@@ -65,17 +80,31 @@ fun Dispatcher.callbackCommands() {
             }
 
             val performances = ApiClient.getPerformances(userId)
-            val buttons = performances.map { perf ->
-                val label = if (perf.isSubscribed) "✅ ${perf.title}" else perf.title
-                val callbackData = if (perf.isSubscribed) "-perf::${perf.id}" else "+perf::${perf.id}"
-                listOf(InlineKeyboardButton.CallbackData(text = label, callbackData = callbackData))
-            }
-
-            bot.editMessageReplyMarkup(
+            val (_, editError) = bot.editMessageReplyMarkup(
                 chatId = ChatId.fromId(chatId),
                 messageId = messageId,
-                replyMarkup = InlineKeyboardMarkup.create(buttons)
+                replyMarkup = buildPerformancePage(performances, page)
             )
+            if (editError != null) logger().error("Failed to edit markup: ${editError.message}")
+        }
+    }
+
+    callbackQuery("perfpage::") {
+        val data = callbackQuery.data
+        val userId = callbackQuery.from.id
+        val chatId = callbackQuery.message?.chat?.id ?: return@callbackQuery
+        val messageId = callbackQuery.message?.messageId ?: return@callbackQuery
+
+        val page = data.removePrefix("perfpage::").toIntOrNull() ?: return@callbackQuery
+
+        runBlocking {
+            val performances = ApiClient.getPerformances(userId)
+            val (_, editError) = bot.editMessageReplyMarkup(
+                chatId = ChatId.fromId(chatId),
+                messageId = messageId,
+                replyMarkup = buildPerformancePage(performances, page)
+            )
+            if (editError != null) logger().error("Failed to edit markup: ${editError.message}")
         }
     }
 }
@@ -113,32 +142,3 @@ fun Dispatcher.statusCommands() {
         }
     }
 }
-
-//fun Dispatcher.adminCommands() {
-//    command("subs") {
-//        val details = runBlocking { ApiClient.getAdminSubscriptions() }
-//
-//        if (details.isEmpty()) {
-//            bot.sendMessage(ChatId.fromId(message.chat.id), "ℹ Пока нет подписок на спектакли.")
-//            return@command
-//        }
-//
-//        val dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-//
-//        val text = buildString {
-//            append("📊 <b>Подписки на спектакли:</b>\n")
-//            details.forEach { detail ->
-//                append("\n🎭 <b>${detail.performance.title}</b> (${detail.subscribers.size}):\n")
-//                detail.subscribers.forEach { sub ->
-//                    val userRef = if (sub.username != null) "@${sub.username}" else sub.firstName
-//                    val date = runCatching {
-//                        LocalDateTime.parse(sub.subscribedAt).format(dateFormatter)
-//                    }.getOrElse { sub.subscribedAt }
-//                    append("  • $userRef — с $date [${sub.notificationCount} увед.]\n")
-//                }
-//            }
-//        }
-//
-//        bot.sendMessage(ChatId.fromId(message.chat.id), text, parseMode = HTML)
-//    }
-//}

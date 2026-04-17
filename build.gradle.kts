@@ -18,6 +18,7 @@ val ktorVersion = "3.1.0"
 
 dependencies {
     implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.3.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
 
     // Ktor server (webhook endpoint)
     implementation("io.ktor:ktor-server-core:$ktorVersion")
