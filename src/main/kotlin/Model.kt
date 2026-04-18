@@ -12,6 +12,7 @@ data class PerformanceDto(
 @Serializable
 data class PerformanceRef(
     val id: String,
+    val theatreId: String? = null,
     val title: String,
     val url: String,
     val scene: String? = null
@@ -32,6 +33,12 @@ data class SubscriptionDto(
     val theatre: TheatreRef,
     val subscribedAt: String,
     val notificationCount: Int
+)
+
+@Serializable
+data class UserTheatreSubscriptionsDto(
+    val theatre: TheatreRef,
+    val subscriptions: List<SubscriptionDto>
 )
 
 @Serializable
