@@ -110,21 +110,6 @@ fun Dispatcher.callbackCommands() {
 }
 
 fun Dispatcher.statusCommands() {
-    command("status") {
-        val userId = message.from?.id ?: return@command
-        val subscriptions = runBlocking { ApiClient.getUserSubscriptions(userId) }
-
-        if (subscriptions.isEmpty()) {
-            bot.sendMessage(
-                ChatId.fromId(message.chat.id),
-                "ℹ Вы не подписаны ни на один спектакль.\nИспользуйте /perfs чтобы выбрать спектакли."
-            )
-        } else {
-            val list = subscriptions.joinToString("\n") { "🎭 ${it.performance.title}" }
-            bot.sendMessage(ChatId.fromId(message.chat.id), "✅ Вы подписаны на уведомления о билетах:\n$list")
-        }
-    }
-
     command("mysubs") {
         val userId = message.from?.id ?: return@command
         val subscriptions = runBlocking { ApiClient.getUserSubscriptions(userId) }

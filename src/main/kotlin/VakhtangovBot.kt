@@ -28,7 +28,6 @@ fun main() {
     bot.setMyCommands(
         listOf(
             BotCommand("perfs", "Список спектаклей"),
-            BotCommand("status", "Мои подписки"),
             BotCommand("mysubs", "Мои подписки со ссылками"),
         )
     )
