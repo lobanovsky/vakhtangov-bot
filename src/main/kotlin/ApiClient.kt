@@ -52,6 +52,7 @@ object ApiClient {
     suspend fun getUserSubscriptions(telegramId: Long): List<SubscriptionDto> {
         val grouped: List<UserTheatreSubscriptionsDto> = http.get("$backendUrl/api/users/$telegramId/subscriptions") {
             bearerAuth(apiKey)
+            parameter("theatre", theatreSlug)
         }.body()
         return grouped.flatMap { it.subscriptions }
     }
