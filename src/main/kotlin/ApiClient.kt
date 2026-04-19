@@ -56,12 +56,6 @@ object ApiClient {
         return grouped.flatMap { it.subscriptions }
     }
 
-    suspend fun getAdminSubscriptions(): List<SubscriptionDetailDto> {
-        return http.get("$backendUrl/api/admin/theatres/$theatreSlug/subscriptions") {
-            bearerAuth(apiKey)
-        }.body()
-    }
-
     suspend fun ackNotification(notificationId: String) {
         http.post("$backendUrl/api/notifications/$notificationId/ack") {
             bearerAuth(apiKey)

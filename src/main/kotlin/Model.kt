@@ -42,21 +42,6 @@ data class UserTheatreSubscriptionsDto(
 )
 
 @Serializable
-data class SubscriberInfoDto(
-    val telegramId: Long,
-    val firstName: String,
-    val username: String? = null,
-    val subscribedAt: String,
-    val notificationCount: Int
-)
-
-@Serializable
-data class SubscriptionDetailDto(
-    val performance: PerformanceRef,
-    val subscribers: List<SubscriberInfoDto>
-)
-
-@Serializable
 data class PendingNotificationDto(
     val id: String,
     val telegramId: Long,
