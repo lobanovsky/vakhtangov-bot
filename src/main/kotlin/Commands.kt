@@ -155,7 +155,7 @@ private const val PAYMENT_TEXT = """Стоимость: 1000₽ за 6 меся�
 
 private fun menuKeyboard() = KeyboardReplyMarkup(
     keyboard = listOf(
-        listOf(KeyboardButton("📋 Подписка")),
+        listOf(KeyboardButton("📋 Моя подписка")),
         listOf(KeyboardButton("ℹ️ Информация"), KeyboardButton("💳 Оплата"))
     ),
     resizeKeyboard = true
@@ -172,7 +172,7 @@ fun Dispatcher.startCommands() {
 }
 
 fun Dispatcher.menuCommands() {
-    text("📋 Подписка") {
+    text("📋 Моя подписка") {
         val userId = message.from?.id ?: return@text
         val chatId = ChatId.fromId(message.chat.id)
         val status = try {
