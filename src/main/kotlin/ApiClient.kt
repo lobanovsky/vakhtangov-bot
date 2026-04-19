@@ -57,6 +57,12 @@ object ApiClient {
         return grouped.flatMap { it.subscriptions }
     }
 
+    suspend fun getPaidSubscription(telegramId: Long): PaidSubscriptionStatusDto {
+        return http.get("$backendUrl/api/users/$telegramId/paid-subscription") {
+            bearerAuth(apiKey)
+        }.body()
+    }
+
     suspend fun ackNotification(notificationId: String) {
         http.post("$backendUrl/api/notifications/$notificationId/ack") {
             bearerAuth(apiKey)

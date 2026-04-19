@@ -12,6 +12,8 @@ fun main() {
         logLevel = LogLevel.Error
 
         dispatch {
+            startCommands()
+            menuCommands()
             perfCommands()
             callbackCommands()
             statusCommands()

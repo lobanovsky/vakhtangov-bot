@@ -53,6 +53,24 @@ data class PendingNotificationDto(
 )
 
 @Serializable
+data class PaidSubscriptionStatusDto(
+    val hasActiveSubscription: Boolean,
+    val subscription: PaidSubscriptionDto? = null
+)
+
+@Serializable
+data class PaidSubscriptionDto(
+    val id: String,
+    val startDate: String,
+    val endDate: String,
+    val amountPaid: Int,
+    val comment: String? = null,
+    val isActive: Boolean,
+    val createdBy: String,
+    val createdAt: String
+)
+
+@Serializable
 data class SyncUserRequest(
     val telegramId: Long,
     val firstName: String,

@@ -1,10 +1,13 @@
 import com.github.kotlintelegrambot.dispatcher.Dispatcher
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
+import com.github.kotlintelegrambot.dispatcher.text
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
+import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
 import com.github.kotlintelegrambot.entities.ParseMode.HTML
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
+import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
 import kotlinx.coroutines.runBlocking
 
 private const val PAGE_SIZE = 70
@@ -125,5 +128,79 @@ fun Dispatcher.statusCommands() {
             }
             bot.sendMessage(ChatId.fromId(message.chat.id), "✅ Ваши подписки:\n$list", parseMode = HTML)
         }
+    }
+}
+
+private const val INFO_TEXT = """Сервис «Билеты в продаже»
+
+Уведомляет, если билеты появились в продаже на выбранные спектакли.
+
+🎭 Боты:
+1. Театр Наций — @nations_ticket_bot
+2. РАМТ — @ramt_ticket_bot
+3. Мастерская Петра Фоменко — @fomenkiru_bot
+4. Театр им. Вахтангова — @vakhtangov_ticket_bot
+
+Поддержка: e.lobanovsky@ya.ru / @e_lobanovsky
+Создано в «Бюро Лобановского» — https://lobanovsky.ru"""
+
+private const val PAYMENT_TEXT = """Стоимость: 1000₽ за 6 месяцев
+
+Перевод по номеру телефона: +7-926-793-63-63
+Банк: Т-Банк или Сбер
+В комментарии укажите ваш Telegram-username.
+
+Поддержка: e.lobanovsky@ya.ru / @e_lobanovsky"""
+
+private fun menuKeyboard() = KeyboardReplyMarkup(
+    keyboard = listOf(
+        listOf(KeyboardButton("📋 Подписка")),
+        listOf(KeyboardButton("ℹ️ Информация"), KeyboardButton("💳 Оплата"))
+    ),
+    resizeKeyboard = true
+)
+
+fun Dispatcher.startCommands() {
+    command("start") {
+        bot.sendMessage(
+            chatId = ChatId.fromId(message.chat.id),
+            text = "Выберите действие:",
+            replyMarkup = menuKeyboard()
+        )
+    }
+}
+
+fun Dispatcher.menuCommands() {
+    text("📋 Подписка") {
+        val userId = message.from?.id ?: return@text
+        val chatId = ChatId.fromId(message.chat.id)
+        val status = try {
+            runBlocking { ApiClient.getPaidSubscription(userId) }
+        } catch (e: Exception) {
+            logger().error("Ошибка при получении подписки: ${e.message}", e)
+            bot.sendMessage(chatId, "⚠️ Ошибка при получении данных о подписке")
+            return@text
+        }
+        if (status.hasActiveSubscription) {
+            val sub = status.subscription!!
+            val text = buildString {
+                appendLine("✅ У вас активная подписка")
+                appendLine("📅 Начало: ${sub.startDate}")
+                appendLine("📅 Окончание: ${sub.endDate}")
+                appendLine("💰 Стоимость: ${sub.amountPaid}₽")
+                if (!sub.comment.isNullOrBlank()) appendLine("💬 ${sub.comment}")
+            }
+            bot.sendMessage(chatId, text.trim())
+        } else {
+            bot.sendMessage(chatId, "❌ У вас нет активной подписки\n\nДля подключения — кнопка 💳 Оплата")
+        }
+    }
+
+    text("ℹ️ Информация") {
+        bot.sendMessage(ChatId.fromId(message.chat.id), INFO_TEXT)
+    }
+
+    text("💳 Оплата") {
+        bot.sendMessage(ChatId.fromId(message.chat.id), PAYMENT_TEXT)
     }
 }
