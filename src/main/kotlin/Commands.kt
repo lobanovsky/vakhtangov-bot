@@ -134,18 +134,19 @@ fun Dispatcher.statusCommands() {
 
 private const val INFO_TEXT = """Сервис «Билеты в продаже»
 
-Уведомляет, если билеты появились в продаже на выбранные спектакли.
+Боты уведомляют, если билеты есть в продаже на выбранные спектакли.
 
 🎭 Боты:
 1. Театр Наций — @nations_ticket_bot
 2. РАМТ — @ramt_ticket_bot
 3. Мастерская Петра Фоменко — @fomenkiru_bot
 4. Театр им. Вахтангова — @vakhtangov_ticket_bot
+5. Театр Ленсовета — @lensov_ticket_bot
 
 Поддержка: e.lobanovsky@ya.ru / @e_lobanovsky
 Создано в «Бюро Лобановского» — https://lobanovsky.ru"""
 
-private const val PAYMENT_TEXT = """Стоимость: 1000₽ за 6 месяцев
+private const val PAYMENT_TEXT = """Стоимость: 1000₽ за 6 месяцев за все боты
 
 Перевод по номеру телефона: +7-926-793-63-63
 Банк: Т-Банк или Сбер
