@@ -40,12 +40,12 @@ fun Dispatcher.perfCommands() {
             runBlocking { ApiClient.getPerformances(userId) }
         } catch (e: Exception) {
             logger().error("Ошибка в /perfs при вызове API: ${e.message}", e)
-            bot.sendMessage(chatId, "⚠️ Ошибка при загрузке спектаклей: ${e.message}")
+            bot.sendMessage(chatId, "⚠️ Ошибка при загрузке спектаклей: ${e.message}", replyMarkup = menuKeyboard())
             return@command
         }
 
         if (performances.isEmpty()) {
-            bot.sendMessage(chatId, "ℹ На данный момент нет доступных спектаклей.")
+            bot.sendMessage(chatId, "ℹ На данный момент нет доступных спектаклей.", replyMarkup = menuKeyboard())
             return@command
         }
 
@@ -120,13 +120,14 @@ fun Dispatcher.statusCommands() {
         if (subscriptions.isEmpty()) {
             bot.sendMessage(
                 ChatId.fromId(message.chat.id),
-                "ℹ Вы не подписаны ни на один спектакль.\nИспользуйте /perfs чтобы выбрать спектакли."
+                "ℹ Вы не подписаны ни на один спектакль.\nИспользуйте /perfs чтобы выбрать спектакли.",
+                replyMarkup = menuKeyboard()
             )
         } else {
             val list = subscriptions.joinToString("\n") {
                 "🎭 <a href=\"${it.performance.url}\">${it.performance.title}</a>"
             }
-            bot.sendMessage(ChatId.fromId(message.chat.id), "✅ Ваши подписки:\n$list", parseMode = HTML)
+            bot.sendMessage(ChatId.fromId(message.chat.id), "✅ Ваши подписки:\n$list", parseMode = HTML, replyMarkup = menuKeyboard())
         }
     }
 }
@@ -178,7 +179,7 @@ fun Dispatcher.menuCommands() {
             runBlocking { ApiClient.getPaidSubscription(userId) }
         } catch (e: Exception) {
             logger().error("Ошибка при получении подписки: ${e.message}", e)
-            bot.sendMessage(chatId, "⚠️ Ошибка при получении данных о подписке")
+            bot.sendMessage(chatId, "⚠️ Ошибка при получении данных о подписке", replyMarkup = menuKeyboard())
             return@text
         }
         if (status.hasActiveSubscription) {
@@ -190,17 +191,17 @@ fun Dispatcher.menuCommands() {
                 appendLine("💰 Стоимость: ${sub.amountPaid}₽")
                 if (!sub.comment.isNullOrBlank()) appendLine("💬 ${sub.comment}")
             }
-            bot.sendMessage(chatId, text.trim())
+            bot.sendMessage(chatId, text.trim(), replyMarkup = menuKeyboard())
         } else {
-            bot.sendMessage(chatId, "❌ У вас нет активной подписки\n\nДля подключения — кнопка 💳 Оплата")
+            bot.sendMessage(chatId, "❌ У вас нет активной подписки\n\nДля подключения — кнопка 💳 Оплата", replyMarkup = menuKeyboard())
         }
     }
 
     text("ℹ️ Информация") {
-        bot.sendMessage(ChatId.fromId(message.chat.id), INFO_TEXT)
+        bot.sendMessage(ChatId.fromId(message.chat.id), INFO_TEXT, replyMarkup = menuKeyboard())
     }
 
     text("💳 Оплата") {
-        bot.sendMessage(ChatId.fromId(message.chat.id), PAYMENT_TEXT)
+        bot.sendMessage(ChatId.fromId(message.chat.id), PAYMENT_TEXT, replyMarkup = menuKeyboard())
     }
 }
