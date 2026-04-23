@@ -142,6 +142,7 @@ private const val INFO_TEXT = """Сервис «Билеты в продаже»
 3. Мастерская Петра Фоменко — @fomenkiru_bot
 4. Театр им. Вахтангова — @vakhtangov_ticket_bot
 5. Театр Ленсовета — @lensov_ticket_bot
+6. МХТ им. Чехова — @mxt_ticket_bot
 
 Поддержка: e.lobanovsky@ya.ru / @e_lobanovsky
 Создано в «Бюро Лобановского» — https://lobanovsky.ru"""
