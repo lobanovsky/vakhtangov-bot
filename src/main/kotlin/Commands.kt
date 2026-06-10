@@ -165,7 +165,7 @@ private const val PAYMENT_TEXT = """Стоимость: 1000₽ за 6 меся�
 
 private fun menuKeyboard() = KeyboardReplyMarkup(
     keyboard = listOf(
-        listOf(KeyboardButton("📜 Список спектаклей"), KeyboardButton("🔗 Мои подписки")),
+        listOf(KeyboardButton("📜 Спектакли"), KeyboardButton("🔗 Мои подписки")),
         listOf(KeyboardButton("📋 Моя подписка")),
         listOf(KeyboardButton("ℹ️ Информация"), KeyboardButton("💳 Оплата"))
     ),
